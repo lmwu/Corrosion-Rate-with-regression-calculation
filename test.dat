@@ -1,6 +1,6 @@
 Probe	"Sample Probe"
 Code for upload decoding:	"Fuck you! GOAT Grant!"
-Probe Type	Coating defect area -A (cm²)	Certificate thickness -d0 (µm)	Certificate Rr - Rr0 (mΩ)	Certificate Rc - Rc0 (mΩ)	TagNo	Tag Description	Logger Type	Logger Serial No	Logger Firmware Version	Is Probe intelligent?	T0 (°C)	Mat spec	α (ppm/K)	Note
+Sample Type	Coating defect area -A (cm²)	Certificate thickness -d0 (µm)	Certificate Rr - Rr0 (mΩ)	Certificate Rc - Rc0 (mΩ)	TagNo	Tag Description	Logger Type	Logger Serial No	Logger Firmware Version	Is Probe intelligent?	T0 (°C)	Mat spec	α (ppm/K)	Note
 "PD10-10-1.0-20"	"10"	"1000"	"1.159"	"1.189"	""	""	""	""	""	"False"	""	""	""	""	
 
 Received Time	Thickness (µm)	Uac,structure (V)	Iac,coupon (mA)	Jac,coupon (A/m²)	Rs,coupon (Ωm²)	Idc,coupon (mA)	Jdc,coupon (A/m²)	Eon,structure (V)	Rr (mΩ)	Rc (mΩ)	RSys (mΩ)	Eoff,coupon (V)	EIR-free,coupon (V)	Pow (V)	T,logger (°C)	T,coupon (°C)	Warning	Original Err Code	Source Details	Data Source	User	User Id	Measurement Types
