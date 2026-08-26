@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="author" content="我操他媽之 L-M. Wu 混世魔王">
+    <meta name="description" content="驗證MetriCorr對於腐蝕速率CR值的計算是否正確" />
+    <title>MetriCorr輸出ace檔案解算CR值</title>
+  </head>
+  <body>
+    <h2>解析之ace檔案</h2>
+    <input type="file" id="fileInput" accept=".ace,.txt" />
+    <div id="crResult" style="margin-top: 20px; font-weight: bold;">
+      CR值: 尚未計算
+    </div>
+    <table border="1" id="resultTable">
+      <thead>
+        <tr>
+          <th>Received Time</th>
+          <th>Thickness (µm)</th>
+          <th>Parsed Time (ms)</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+   
+    
+    <script>
+
+      // 前端CR即時計算截用源碼起始
+      //線性迴歸 function 來計算CR值
+      function calcLinearReg(myArray, navigatorStart, navigatorEnd) {
+        var valuesX = new Array();
+        var startIndex = -1;
+        var endIndex = -1;
+        var valuexY = new Array();
+        var slope = -1;
+        var Vcorr = -1;
+        var temp;
+
+        for (var n = 0; n < myArray.length; n++) {
+          temp = myArray[n][0];
+
+          if (temp >= navigatorStart) {
+            startIndex = n;
+            break;
+          }
+        }
+
+        if (startIndex != -1) {
+          for (var n = myArray.length - 1; n >= 0; n--) {
+            temp = myArray[n][0];
+            if (temp <= navigatorEnd) {
+              endIndex = n;
+              break;
+            }
+          }
+        }
+
+        //確認index 是否正確
+        console.log("myArray.length: " + myArray.length);
+        console.log("startIndex: " + startIndex + " endIndex: " + endIndex);
+
+        if (startIndex != -1 && endIndex != -1 && endIndex > startIndex) {
+          var sx = 0.0;
+          var sy = 0.0;
+          var sxx = 0.0;
+          var syy = 0.0;
+          var sxy = 0.0;
+          //intersect = sy/n - slope*sx/n;
+
+          var firstValue = myArray[startIndex][0];
+          var diffX = 0;
+
+          for (var n = startIndex; n <= endIndex; n++) {
+            diffX = myArray[n][0] - firstValue;
+            sx += diffX;
+            sy += myArray[n][1];
+            sxx += diffX * diffX;
+            syy += myArray[n][1] * myArray[n][1];
+            sxy += diffX * myArray[n][1];
+          }
+          var numberOfElements = endIndex - startIndex + 1;
+          slope =
+            (sxy * numberOfElements - sx * sy) /
+            (numberOfElements * sxx - sx * sx);
+          
+            console.log("slope: " + slope);
+          console.log("sxy: " + sxy + " sx: " + sx + " sy: " + sy);
+          console.log("sxx: " + sxx + " syy: " + syy);
+          console.log("numberOfElements: " + numberOfElements);
+        
+        }
+        
+        if (slope != -1) {
+          var milliSecPrDay = 24 * 60 * 60 * 1000;
+          Vcorr = -slope * milliSecPrDay * 365;
+        }
+
+        return Vcorr;
+      }
+      
+      //前端源碼直接呼叫 calcVCorr
+      // calcVCorr(時間與厚度陣列, 選擇起算時間點<js格式>, 選擇終止時間點<js格式>) 來計算CR值
+      function calcVCorr(dataThickness, navigatorStart, navigatorEnd) {
+        var result = calcLinearReg(dataThickness, navigatorStart, navigatorEnd);
+        return result;
+      }
+
+      // 前端CR即時計算截用源碼至此
+      
+      document
+        .getElementById("fileInput")
+        .addEventListener("change", function (e) {
+          const file = e.target.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = function (evt) {
+            const lines = evt.target.result.split(/\r?\n/);
+            if (lines.length <= 5) return;
+            // 跳過前5行
+            const headerLine = lines[5];
+            const headers = headerLine.split("\t");
+            const timeIdx = headers.indexOf("Received Time");
+            // Thickness 欄位
+            let thicknessIdx = -1;
+            for (let i = 0; i < headers.length; i++) {
+              if (headers[i].includes("Thickness")) {
+                thicknessIdx = i;
+                break;
+              }
+            }
+            if (timeIdx === -1 || thicknessIdx === -1) {
+              alert("找不到欄位");
+              return;
+            }
+            const tbody = document
+              .getElementById("resultTable")
+              .querySelector("tbody");
+            tbody.innerHTML = "";
+            //  [thickness, parsedTime] 二維陣列
+            const array = [];
+            for (let i = 6; i < lines.length; i++) {
+              if (!lines[i].trim()) continue;
+              const cols = lines[i].split("\t");
+              if (cols.length <= Math.max(timeIdx, thicknessIdx)) continue;
+              const tr = document.createElement("tr");
+              const tdTime = document.createElement("td");
+              tdTime.textContent = cols[timeIdx];
+              const tdThickness = document.createElement("td");
+              tdThickness.textContent = cols[thicknessIdx];
+              const tdParsedTime = document.createElement("td");
+              // 加上 ' GMT' 讓 Date.parse 以 GMT+00 解析
+              const parsedTime = Date.parse(cols[timeIdx] + " GMT");
+              tdParsedTime.textContent = isNaN(parsedTime) ? "" : parsedTime;
+              tr.appendChild(tdTime);
+              tr.appendChild(tdThickness);
+              tr.appendChild(tdParsedTime);
+              tbody.appendChild(tr);
+              //將 thickness 與 parsedTime 存入 array
+              array.push([
+                isNaN(parsedTime) ? "" : parsedTime,
+                parseFloat(cols[thicknessIdx]) || 0 // 轉換為浮點數
+              ]);
+            }
+            
+            var myStart = array[0][0];
+            var myEnd = array[array.length - 1][0];
+
+            theCR = calcVCorr(array, myStart, myEnd);
+            console.log("起訖時間: " + myStart , " ~ " , myEnd);
+            console.log("CR值: " + theCR + " µm/a");
+
+            // 將 CR 值顯示在網頁頁面
+            const crResultDiv = document.getElementById("crResult");
+            crResultDiv.textContent = "CR值: " + (theCR ? theCR.toFixed(2) : "計算失敗") + " µm/a";
+            
+          };
+          reader.readAsText(file, "utf-8");
+        });
+
+       
+    </script>
+  </body>
+</html>
