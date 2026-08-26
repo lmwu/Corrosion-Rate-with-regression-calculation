@@ -1,2 +1,2 @@
-# Corrosion-Rate-with-regression-calculation
+# Corrosion Rate from regression calculation
 利用回歸分析推算腐蝕監測試片之指定時段減薄率
